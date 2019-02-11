@@ -21,6 +21,7 @@ namespace ElevationMapCreator
             string address ,
             Stack<Coordinate> coordinates ,
             int maxCoordinatesPerRequest ,
+            Ticket ticket ,
             bool logTraffic
         )
         {
@@ -58,7 +59,7 @@ namespace ElevationMapCreator
 
             //get the stream of the content.
             string result = null;
-            while( result==null )
+            while( result==null && ticket.valid )
             {
                 try
                 {
@@ -209,6 +210,7 @@ namespace ElevationMapCreator
                             serviveProvider.address ,
                             coordinates ,
                             maxCoordinatesPerRequest ,
+                            ticket ,
                             logTraffic
                         );
                         
