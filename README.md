@@ -29,3 +29,5 @@ Workflow:
 6. This process can be Aborted (button) and started over again when targeting the same csv file (dialog window will show up) 
 7. Occasional connection or time-out errors are to be expected. But 100% constant errors needs your attention - when that happens try lowering Max coordinates per request by half and repeat (this limit depends on data provider, server load etc. and can vary a lot for different providers).
 #
+
+![screenshot](screenshot.png)
