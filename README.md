@@ -1,8 +1,8 @@
 # Elevation data downloader
 Project goal: Enable download of specific elevation data ranges and create lossless heightmap files
 
-Features:
 #
+Features:
 - Raw elevation data is stored in csv accumulator files
 - CSV can be converted to 1 channel * 16bit PNG
 - Program uses HTTP GET/POST methods to communicate. POST is default one.
