@@ -1,6 +1,5 @@
 # Elevation data downloader
-Project goal: Download specific elevation data and create heightmap textures
-#
+Project goal: Enable download of specific elevation data ranges and create lossless heightmap files
 
 Features:
 #
