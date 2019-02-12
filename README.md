@@ -1,6 +1,9 @@
 # Elevation data downloader
-Project goal: Enable download of specific elevation data ranges and create lossless heightmap files
-
+![screenshot](screenshot.png)
+#
+Project goals:
+- Enable download of specific elevation data ranges
+- Create lossless heightmap files
 #
 Features:
 - Raw elevation data is stored in csv accumulator files
@@ -15,8 +18,6 @@ Features:
     
 - IElevationServiceProvider makes adding new data providers easy 
 #
-
-#
 Workflow:
 1. Specify latitude/longitude rect (fields)
 2. Specify resolution (fields)
@@ -29,5 +30,3 @@ Workflow:
 6. This process can be Aborted (button) and started over again when targeting the same csv file (dialog window will show up) 
 7. Occasional connection or time-out errors are to be expected. But 100% constant errors needs your attention - when that happens try lowering Max coordinates per request by half and repeat (this limit depends on data provider, server load etc. and can vary a lot for different providers).
 #
-
-![screenshot](screenshot.png)
