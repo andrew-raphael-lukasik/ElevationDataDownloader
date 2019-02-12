@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Http;
+using IO = System.IO;
 
 using UnityEngine;
 using UnityEditor;
+
+using Pngcs.Unity;
 
 namespace ElevationMapCreator
 {
@@ -121,8 +124,8 @@ namespace ElevationMapCreator
         {
             Debug.Log( $"{ nameof(GetElevationData) }() started" );
             
-            System.IO.FileStream stream = null;
-            System.IO.StreamWriter writer = null;
+            IO.FileStream stream = null;
+            IO.StreamWriter writer = null;
 
             try
             {
@@ -130,9 +133,9 @@ namespace ElevationMapCreator
 
                 //open file stream:
                 {
-                    System.IO.FileMode fileMode;
+                    IO.FileMode fileMode;
                     if(
-                        System.IO.File.Exists( filePath )
+                        IO.File.Exists( filePath )
                         && EditorUtility.DisplayDialog(
                             "Decide" ,
                             "CONTINUE: Setting must match to succeessfully continue\nOVERWRITE: data will be lost",
@@ -141,7 +144,7 @@ namespace ElevationMapCreator
                         )
                     )
                     {
-                        fileMode = System.IO.FileMode.Append;
+                        fileMode = IO.FileMode.Append;
                         skip = 0;
                         ForEachLine(
                             filePath ,
@@ -150,19 +153,19 @@ namespace ElevationMapCreator
                     }
                     else
                     {
-                        fileMode = System.IO.FileMode.Create;
+                        fileMode = IO.FileMode.Create;
                         skip = 0;
                     }
                     
-                    stream = new System.IO.FileStream(
+                    stream = new IO.FileStream(
                         filePath ,
                         fileMode ,
-                        System.IO.FileAccess.Write ,
-                        System.IO.FileShare.Read ,
+                        IO.FileAccess.Write ,
+                        IO.FileShare.Read ,
                         4096 ,
-                        System.IO.FileOptions.SequentialScan
+                        IO.FileOptions.SequentialScan
                     );
-                    writer = new System.IO.StreamWriter( stream );
+                    writer = new IO.StreamWriter( stream );
                 }
 
                 //populate stack:
@@ -266,36 +269,36 @@ namespace ElevationMapCreator
         /// Reads text file line by line and creates result file sinultanously
         public void ProcessTextFile ( string filePath , string filePathOutput , System.Func<string,string> process )
         {
-            if( System.IO.File.Exists(filePath)==false )
+            if( IO.File.Exists(filePath)==false )
             {
                 Debug.LogError( $"file not found: { filePath }" );
                 return;
             }
 
-            System.IO.FileStream stream_reading = null;
-            System.IO.FileStream stream_writing = null;
-            System.IO.StreamReader reader = null;
-            System.IO.StreamWriter writer = null;
+            IO.FileStream stream_reading = null;
+            IO.FileStream stream_writing = null;
+            IO.StreamReader reader = null;
+            IO.StreamWriter writer = null;
             try
             {
-                stream_reading = new System.IO.FileStream(
+                stream_reading = new IO.FileStream(
                     filePath ,
-                    System.IO.FileMode.Open ,
-                    System.IO.FileAccess.Read ,
-                    System.IO.FileShare.Write ,
+                    IO.FileMode.Open ,
+                    IO.FileAccess.Read ,
+                    IO.FileShare.Write ,
                     4096 ,
-                    System.IO.FileOptions.SequentialScan
+                    IO.FileOptions.SequentialScan
                 );
-                stream_writing = new System.IO.FileStream(
+                stream_writing = new IO.FileStream(
                     filePathOutput ,
-                    System.IO.FileMode.Create ,
-                    System.IO.FileAccess.Write ,
-                    System.IO.FileShare.Read ,
+                    IO.FileMode.Create ,
+                    IO.FileAccess.Write ,
+                    IO.FileShare.Read ,
                     4096 ,
-                    System.IO.FileOptions.SequentialScan
+                    IO.FileOptions.SequentialScan
                 );
-                reader = new System.IO.StreamReader( stream_reading );
-                writer = new System.IO.StreamWriter( stream_writing );
+                reader = new IO.StreamReader( stream_reading );
+                writer = new IO.StreamWriter( stream_writing );
                 
                 string line;
                 while( (line = reader.ReadLine())!=null )
@@ -316,7 +319,7 @@ namespace ElevationMapCreator
             }
         }
 
-        public void WriteImageFile (
+        public async void WriteImageFile (
             string filePath ,
             int width ,
             int height ,
@@ -331,81 +334,81 @@ namespace ElevationMapCreator
                     Debug.Log( "Cancelled by user" );
                     return;
                 }
-                if( System.IO.File.Exists(filePath)==false )
+                if( IO.File.Exists(filePath)==false )
                 {
                     Debug.LogError( $"File not found: { filePath }" );
                     return;
                 }
             }
 
-            //prepare bytes for pixels:
-            byte[] bytes;
+            //prepare samples:
+            Debug.Log( $"Creating image...\nsource: { filePath }" );
+            int[] pixels;
             {
-                Texture2D texture = new Texture2D( width , height , TextureFormat.RGBAHalf , false , true );
-                Color[] pixels = new Color[ height * width ];
-                System.IO.FileStream stream = null;
-                System.IO.StreamReader reader = null;
-                try
-                {
-                    stream = new System.IO.FileStream(
-                        filePath ,
-                        System.IO.FileMode.Open ,
-                        System.IO.FileAccess.Read ,
-                        System.IO.FileShare.Read ,
-                        4096 ,
-                        System.IO.FileOptions.SequentialScan
-                    );
-                    reader = new System.IO.StreamReader( stream );
+                pixels = new int[ height * width ];
+                IO.FileStream stream = null;
+                IO.StreamReader reader = null;
 
-                    int i = 0;
-                    
-                    //
-                    string line = null;
-                    while( (line = reader.ReadLine())!=null )
+                await Task.Run( ()=> {
+
+                    try
                     {
-                        if( line.Length!=0 )
-                        {
-                            //calc color value:
-                            Color col;
-                            {
-                                float elevation = float.Parse( line );
-                                float val = Mathf.InverseLerp( clampElevation.x , clampElevation.y , elevation );
-                                col = new Color( val , val , val );
-                            }
-                            
-                            // find pixel position
-                            int X = (width-1) - i%width;
-                            int Y = (height-1) - i/width;
-                            
-                            // set pixel color
-                            pixels[ Y * width + X ] = col;
+                        stream = new IO.FileStream(
+                            filePath ,
+                            IO.FileMode.Open ,
+                            IO.FileAccess.Read ,
+                            IO.FileShare.Read
+                        );
+                        reader = new IO.StreamReader( stream );
 
-                            //step
-                            i++;
+                        int index = 0;
+                        
+                        //
+                        string line = null;
+                        while( (line = reader.ReadLine())!=null )
+                        {
+                            if( line.Length!=0 )
+                            {
+                                //calc color value:
+                                float elevation = float.Parse( line );
+                                int val = (int)Mathf.Clamp( elevation , clampElevation.x , clampElevation.y );
+                                
+                                // find pixel position
+                                int X = (width-1) - index%width;
+                                int Y = (height-1) - index/width;
+                                
+                                // set pixel color
+                                pixels[ Y * width + X ] = val;
+
+                                //step
+                                index++;
+                            }
                         }
                     }
-                }
-                catch ( System.Exception ex ) { Debug.LogException(ex); }
-                finally
-                {
-                    if( stream!=null ){ stream.Close(); }
-                    if( reader!=null ){ reader.Close(); }
-                }
-                
-                //
-                texture.SetPixels( pixels );
-                texture.Apply();
-                bytes = texture.EncodeToPNG();
+                    catch ( System.Exception ex ) { Debug.LogException(ex); }
+                    finally
+                    {
+                        if( stream!=null ){ stream.Close(); }
+                        if( reader!=null ){ reader.Close(); }
+                    }
+
+                } );
             }
 
             //write bytes to file:
             {
-                string pngFilePath = filePath.Replace(".csv","") + $" elevations({ clampElevation.x },{ clampElevation.y })" + ".png";
-                System.IO.File.WriteAllBytes(
-                    pngFilePath ,
-                    bytes
+                string pngFilePath = $"{ filePath.Replace(".csv","") } elevations({ clampElevation.x },{ clampElevation.y }).png";
+                Debug.Log( $"\twriting to PNG file: { pngFilePath }" );
+                await PNG.WriteGrayscaleAsync(
+                    pixels:    pixels ,
+                    width:      width ,
+                    height:     height ,
+                    bitDepth:   16 ,
+                    alpha:      false ,
+                    filePath:   pngFilePath
                 );
-                Debug.Log( $"Saved: { pngFilePath }" );
+                filePath = null;
+                Debug.Log( $"\tPNG file ready: { pngFilePath }" );
             }
 
             //call on finish:
@@ -414,19 +417,19 @@ namespace ElevationMapCreator
 
         public void ForEachLine ( string filePath , System.Action<string> action )
         {
-            System.IO.FileStream stream_reading = null;
-            System.IO.StreamReader reader = null;
+            IO.FileStream stream_reading = null;
+            IO.StreamReader reader = null;
             try
             {
-                stream_reading = new System.IO.FileStream(
+                stream_reading = new IO.FileStream(
                     filePath ,
-                    System.IO.FileMode.Open ,
-                    System.IO.FileAccess.Read ,
-                    System.IO.FileShare.Read ,
+                    IO.FileMode.Open ,
+                    IO.FileAccess.Read ,
+                    IO.FileShare.Read ,
                     4096 ,
-                    System.IO.FileOptions.SequentialScan
+                    IO.FileOptions.SequentialScan
                 );
-                reader = new System.IO.StreamReader( stream_reading );
+                reader = new IO.StreamReader( stream_reading );
                 
                 string line;
                 while( (line = reader.ReadLine())!=null )
@@ -464,7 +467,7 @@ namespace ElevationMapCreator
         public string GetFolderPath ()
         {
             string folderPath = $"{ Application.dataPath }/../ElevationMapExporter/";
-            if( System.IO.Directory.Exists( folderPath )==false ) { System.IO.Directory.CreateDirectory( folderPath ); }
+            if( IO.Directory.Exists( folderPath )==false ) { IO.Directory.CreateDirectory( folderPath ); }
             return folderPath;
         }
 
