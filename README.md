@@ -1,13 +1,10 @@
 # Elevation data downloader
-Project goal: Employ HTTP GET/POST to download elevation data and create heightmap textures
+Project goal: Download specific elevation data and create heightmap textures
 #
-PROS: raw elevation data is stored for you in csv file for futher use
 
-CONS: heightmaps are saved as 3*8 bit png
+Features:
 #
-TODO:
-
-- Add option for 1*16 bit RAW files
-
-- Unity encoder doesn't allow 1*16 bit png, fix that
+- Raw elevation data is stored in csv accumulator files
+- CSV can be converted to 1 channel * 16bit PNG
+- You can use https://github.com/andrew-raphael-lukasik/pngcs to import those 16bit png as Texture2D
 #
