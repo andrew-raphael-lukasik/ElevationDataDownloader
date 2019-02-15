@@ -231,7 +231,8 @@ namespace ElevationMapCreator
                                             filePath.Replace( ".csv" , ".png" ) ,
                                             _settings.resolution.longitude ,
                                             _settings.resolution.latitude ,
-                                            _createImageSettings.clampElevation
+                                            _createImageSettings.clamp ,
+                                            _createImageSettings.lerp
                                         );
                                     }
 

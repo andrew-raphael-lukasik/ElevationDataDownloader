@@ -324,6 +324,7 @@ namespace ElevationMapCreator
             int width ,
             int height ,
             Vector2 clampElevation ,
+            Vector2 lerpElevation ,
             System.Action onFinish = null
         )
         {
@@ -371,14 +372,16 @@ namespace ElevationMapCreator
                             {
                                 //calc color value:
                                 float elevation = float.Parse( line );
-                                int val = (int)Mathf.Clamp( elevation , clampElevation.x , clampElevation.y );
+                                float clamped = Mathf.Clamp( elevation , clampElevation.x , clampElevation.y );
+                                float inverselerped = Mathf.InverseLerp( lerpElevation.x , lerpElevation.y , clamped );
+                                int color = (int)( inverselerped * ushort.MaxValue );
                                 
                                 // find pixel position
                                 int X = (width-1) - index%width;
                                 int Y = (height-1) - index/width;
                                 
                                 // set pixel color
-                                pixels[ Y * width + X ] = val;
+                                pixels[ Y * width + X ] = color;
 
                                 //step
                                 index++;

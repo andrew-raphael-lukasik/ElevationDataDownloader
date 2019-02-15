@@ -10,12 +10,14 @@ namespace ElevationMapCreator
     public class CreateImageWindow : EditorWindow
     {
         #region FIELDS
+        
 
         MainWindow _owner = null;
 
         [System.NonSerialized] string _filePath = null;
         int _numDataPoints;
         ElevationRange _elevationRange = new ElevationRange();
+
 
         #endregion
         #region EDITOR WINDOW
@@ -83,9 +85,15 @@ namespace ElevationMapCreator
                 {
                     //
                     GUILayout.Label( "Clamp Elevation:" , GUILayout.Width(100f) );
-                    _owner.createImageSettings.clampElevation.x = EditorGUILayout.FloatField( _owner.createImageSettings.clampElevation.x , GUILayout.Width(60f) );
+                    _owner.createImageSettings.clamp.x = EditorGUILayout.FloatField( _owner.createImageSettings.clamp.x , GUILayout.Width(60f) );
                     GUILayout.Label( "-" , GUILayout.Width(10f) );
-                    _owner.createImageSettings.clampElevation.y = EditorGUILayout.FloatField( _owner.createImageSettings.clampElevation.y , GUILayout.Width(60f) );
+                    _owner.createImageSettings.clamp.y = EditorGUILayout.FloatField( _owner.createImageSettings.clamp.y , GUILayout.Width(60f) );
+
+                    //
+                    GUILayout.Label( "Map Elevation:" , GUILayout.Width(100f) );
+                    _owner.createImageSettings.lerp.x = EditorGUILayout.FloatField( _owner.createImageSettings.lerp.x , GUILayout.Width(60f) );
+                    GUILayout.Label( "-" , GUILayout.Width(10f) );
+                    _owner.createImageSettings.lerp.y = EditorGUILayout.FloatField( _owner.createImageSettings.lerp.y , GUILayout.Width(60f) );
 
                     GUILayout.Space( 20 );
                     
@@ -123,7 +131,8 @@ namespace ElevationMapCreator
                         _filePath ,
                         _owner.createImageSettings.resolution.longitude ,
                         _owner.createImageSettings.resolution.latitude ,
-                        _owner.createImageSettings.clampElevation ,
+                        _owner.createImageSettings.clamp ,
+                        _owner.createImageSettings.lerp ,
                         EditorWindow.GetWindow<CreateImageWindow>().Show
                     );
                 }
@@ -196,7 +205,8 @@ namespace ElevationMapCreator
         public class Settings
         {
             public CoordinateInt resolution = new CoordinateInt{ latitude = 64 , longitude = 64 };
-            public Vector2 clampElevation = new Vector2 ( -100f , 1900f );
+            public Vector2 clamp = new Vector2{ x = -100f , y = 8848f };
+            public Vector2 lerp = new Vector2Int{ x = 0 , y = ushort.MaxValue };
         }
 
         #endregion
