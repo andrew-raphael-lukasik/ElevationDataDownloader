@@ -8,7 +8,7 @@ Project goals:
 Features:
 - Raw elevation data is stored in csv accumulator files
 - CSV can be converted to 1 channel * 16bit PNG (you can convert those to RAW by yourself if needed)
-- Program uses HTTP GET/POST methods to communicate. POST is default one.
+- Program uses Http Get or Post methods to communicate.
 - You can use https://github.com/andrew-raphael-lukasik/pngcs to import those 16bit png as Texture2D
 - Implemented data providers:
 
