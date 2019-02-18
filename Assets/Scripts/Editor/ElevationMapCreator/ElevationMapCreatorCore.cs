@@ -248,16 +248,23 @@ namespace ElevationMapCreator
                         //
                         if( serviceProvider.ParseResponse( response , elevations ) )
                         {
-                            //write entries to file:
-                            foreach( float elevation in elevations )
+                            if( elevations.Count!=0 )
                             {
-                                writer.WriteLine( elevation );
+                                //write entries to file:
+                                foreach( float elevation in elevations )
+                                {
+                                    writer.WriteLine( elevation );
+                                }
+                                elevations.Clear();
                             }
-                            elevations.Clear();
+                            else
+                            {
+                                throw new System.Exception( "Parsed response contains no entries" );
+                            }
                         }
                         else
                         {
-                            throw new System.Exception( "TODO: Act on api answer failed or denied" );
+                            throw new System.Exception( "Parse failed" );
                         }
                     }
 
