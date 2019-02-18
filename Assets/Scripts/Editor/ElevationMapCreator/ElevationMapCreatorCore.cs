@@ -22,7 +22,7 @@ namespace ElevationMapCreator
         #region PUBLIC METHODS
 
 
-        public async Task<string> HTTP_POST
+        public async Task<string> HttpRequest
         (
             IElevationServiceProvider serviceProvider ,
             Stack<Coordinate> coordinates ,
@@ -236,7 +236,7 @@ namespace ElevationMapCreator
                     //call api:
                     {
                         //get response:
-                        string response = await HTTP_POST(
+                        string response = await HttpRequest(
                             serviceProvider:            serviceProvider ,
                             coordinates:                coordinates ,
                             apikey:                     apikey ,
