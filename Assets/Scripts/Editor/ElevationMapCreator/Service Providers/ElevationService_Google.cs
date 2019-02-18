@@ -32,7 +32,7 @@ namespace ElevationMapCreator
             }
             else
             {
-                Debug.LogError( "{ nameof(responseDeserialized) } is null" );
+                Debug.LogError( "Response deserialized is null" );
                 return false;
             }
         }
