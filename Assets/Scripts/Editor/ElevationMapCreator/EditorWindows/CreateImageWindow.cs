@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 //using System.Net.Http;
+using IO = System.IO;
 
 using UnityEngine;
 using UnityEditor;
@@ -125,7 +126,7 @@ namespace ElevationMapCreator
                 }
 
                 GUI.enabled = _filePath!=null;
-                if( GUILayout.Button( "Create Image" , GUILayout.Height(EditorGUIUtility.singleLineHeight*2f) ) )
+                if( GUILayout.Button( "Create Image (this file only)" , GUILayout.Height(EditorGUIUtility.singleLineHeight*2f) ) )
                 {
                     _owner.core.WriteImageFile(
                         _filePath ,
@@ -135,6 +136,21 @@ namespace ElevationMapCreator
                         _owner.createImageSettings.lerp ,
                         EditorWindow.GetWindow<CreateImageWindow>().Show
                     );
+                }
+                if( GUILayout.Button( "Create Images (every file in folder)" , GUILayout.Height(EditorGUIUtility.singleLineHeight*2f) ) )
+                {
+                    string[] csvFiles = IO.Directory.GetFiles( IO.Path.GetDirectoryName( _filePath ) , "*.csv" );
+                    foreach( var csv in csvFiles )
+                    {
+                        _owner.core.WriteImageFile(
+                            csv ,
+                            _owner.createImageSettings.resolution.longitude ,
+                            _owner.createImageSettings.resolution.latitude ,
+                            _owner.createImageSettings.clamp ,
+                            _owner.createImageSettings.lerp ,
+                            EditorWindow.GetWindow<CreateImageWindow>().Show
+                        );
+                    }
                 }
                 GUI.enabled = true;
             }
@@ -153,22 +169,22 @@ namespace ElevationMapCreator
             //read range:
             if(
                 _filePath!=null
-                && System.IO.File.Exists( _filePath )==true
+                && IO.File.Exists( _filePath )==true
             )
             {
-                System.IO.FileStream stream = null;
-                System.IO.StreamReader reader = null;
+                IO.FileStream stream = null;
+                IO.StreamReader reader = null;
                 try
                 {
-                    stream = new System.IO.FileStream(
+                    stream = new IO.FileStream(
                         _filePath ,
-                        System.IO.FileMode.Open ,
-                        System.IO.FileAccess.Read ,
-                        System.IO.FileShare.Read ,
+                        IO.FileMode.Open ,
+                        IO.FileAccess.Read ,
+                        IO.FileShare.Read ,
                         4096 ,
-                        System.IO.FileOptions.SequentialScan
+                        IO.FileOptions.SequentialScan
                     );
-                    reader = new System.IO.StreamReader( stream );
+                    reader = new IO.StreamReader( stream );
 
                     string line = null;
                     while( (line = reader.ReadLine())!=null )
