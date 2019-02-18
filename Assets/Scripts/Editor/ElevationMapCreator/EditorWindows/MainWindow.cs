@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 //using System.Net.Http;
+using System.Linq;
 
 using UnityEngine;
 using UnityEditor;
@@ -32,9 +33,11 @@ namespace ElevationMapCreator
         
         #region runtime program data
         IElevationServiceProvider _serviveProvider = new ElevationService_OpenElevation();//ElevationService_Google();
-        
+        List<ServiceNameInstance> _listServiveProviders = new List<ServiceNameInstance>();
+
         ElevationMapCreatorCore _core;
         public ElevationMapCreatorCore core { get{ return _core; } }
+
         
         #endregion
 
@@ -48,12 +51,21 @@ namespace ElevationMapCreator
             GUI.enabled = _isReady;
             
             EditorGUILayout.Separator();
-            EditorGUILayout.BeginHorizontal();
+            
+            EditorGUILayout.BeginVertical();
             {
-                GUILayout.Label( "Service Provider Selected: " );
-                GUILayout.Label( _serviveProvider!=null ? _serviveProvider.GetType().FullName : "NONE" );
+                EditorGUILayout.BeginHorizontal();
+                    GUILayout.Label( "Service Provider Selected: " );
+                    GUILayout.Label( _serviveProvider!=null ? _serviveProvider.GetType().Name : "NONE" );
+                EditorGUILayout.EndHorizontal();
+                foreach( var entry in _listServiveProviders )
+                {
+                    if( _serviveProvider.GetType()!=entry.instance.GetType() )
+                        if( GUILayout.Button($"Switch To { entry.name }") ) _serviveProvider = entry.instance;
+                }
             }
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+
             _scroll_window = EditorGUILayout.BeginScrollView( _scroll_window );
             {
 
@@ -316,6 +328,23 @@ namespace ElevationMapCreator
         void OnEnable ()
         {
             _core = new ElevationMapCreatorCore();
+
+            // get all service provider implementations:
+            {
+                _listServiveProviders.Clear();
+                var types = System.AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany( s => s.GetTypes() )
+                    .Where( p => typeof(IElevationServiceProvider).IsAssignableFrom(p) )
+                    .Where( p => p.IsClass );
+                foreach( var t in types )
+                {
+                    var obj = System.Activator.CreateInstance( t ) as IElevationServiceProvider;
+                    _listServiveProviders.Add( new ServiceNameInstance{
+                        name = t.Name.Replace( "ElevationService_" , "" ) ,
+                        instance = obj
+                    } );
+                }
+            }
         }
 
         void OnDisable ()
@@ -350,6 +379,8 @@ namespace ElevationMapCreator
         }
 
         public enum EOnFinished { doNothing , createImage }
+
+        struct ServiceNameInstance { public string name; public IElevationServiceProvider instance; }
 
         #endregion
     }
