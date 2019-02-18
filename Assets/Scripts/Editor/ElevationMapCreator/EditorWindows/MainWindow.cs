@@ -8,7 +8,7 @@ using UnityEditor;
 
 namespace ElevationMapCreator
 {
-    public class MainWindow : EditorWindow
+    public class MainWindow : EditorWindow, ISerializationCallbackReceiver
     {
         #region FIELDS
 
@@ -32,11 +32,15 @@ namespace ElevationMapCreator
         #endregion
         
         #region runtime program data
-        IElevationServiceProvider _serviveProvider = new ElevationService_OpenElevation();//ElevationService_Google();
+
+        [SerializeField] string _serviceProvider_serialized;
+        IElevationServiceProvider _serviceProvider = new ElevationService_OpenElevation();
         List<ServiceNameInstance> _listServiveProviders = new List<ServiceNameInstance>();
 
         ElevationMapCreatorCore _core;
         public ElevationMapCreatorCore core { get{ return _core; } }
+
+        string _key;
 
         
         #endregion
@@ -56,12 +60,18 @@ namespace ElevationMapCreator
             {
                 EditorGUILayout.BeginHorizontal();
                     GUILayout.Label( "Service Provider Selected: " );
-                    GUILayout.Label( _serviveProvider!=null ? _serviveProvider.GetType().Name : "NONE" );
+                    GUILayout.Label( _serviceProvider!=null ? _serviceProvider.GetType().Name : "NONE" );
                 EditorGUILayout.EndHorizontal();
                 foreach( var entry in _listServiveProviders )
                 {
-                    if( _serviveProvider.GetType()!=entry.instance.GetType() )
-                        if( GUILayout.Button($"Switch To { entry.name }") ) _serviveProvider = entry.instance;
+                    if(
+                        _serviceProvider.GetType()!=entry.instance.GetType()
+                        && GUILayout.Button($"Switch To { entry.name }")
+                    )
+                    {
+                        _serviceProvider = entry.instance;
+                        _key = null;
+                    }
                 }
             }
             EditorGUILayout.EndVertical();
@@ -210,6 +220,11 @@ namespace ElevationMapCreator
 
                 GUILayout.BeginVertical( "- PROCESS -" , "window" );
                 {
+                    GUILayout.BeginHorizontal();
+                        GUILayout.Label( "api key: " , GUILayout.ExpandWidth(false) );
+                        _key = GUILayout.PasswordField( _key!=null ? _key : "" , '*' );
+                    GUILayout.EndHorizontal();
+
                     //start button:
                     if( GUILayout.Button( "START HTTP REQUESTS" , GUILayout.Height( EditorGUIUtility.singleLineHeight*2f ) ) )
                     {
@@ -227,13 +242,14 @@ namespace ElevationMapCreator
                         {
                             _taskTicket = new Ticket<float>( 0f );
                             _mainTask = _core.GetElevationData(
-                                filePath ,
-                                _serviveProvider ,
-                                _taskTicket ,
-                                _settings.start ,
-                                _settings.end ,
-                                _settings.resolution ,
-                                _settings.maxCoordinatesPerRequest ,
+                                filePath:                       filePath ,
+                                serviceProvider:                _serviceProvider ,
+                                apikey:                         _key ,
+                                ticket:                         _taskTicket ,
+                                start:                          _settings.start ,
+                                end:                            _settings.end ,
+                                resolution:                     _settings.resolution ,
+                                maxCoordinatesPerRequest:       _settings.maxCoordinatesPerRequest ,
                                 this.Repaint ,
                                 ()=>
                                 {
@@ -352,8 +368,29 @@ namespace ElevationMapCreator
             _core.Dispose();
         }
 
+
+        #endregion
+        #region INTERFACE IMPLEMENTATIONS
+
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize ()
+        {
+            if( _serviceProvider_serialized!=null && _serviceProvider_serialized.Length!=0 )
+            {
+                var type = System.Type.GetType( _serviceProvider_serialized );
+                _serviceProvider = System.Activator.CreateInstance( type ) as IElevationServiceProvider;
+            }
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize ()
+        {
+            if( _serviceProvider!=null ) _serviceProvider_serialized = _serviceProvider.GetType().FullName;
+        }
+
+
         #endregion
         #region PRIVATE METHODS
+
 
         [MenuItem( "Tools/Elevation Map Exporter" )]
         public static MainWindow CreateWindow ()

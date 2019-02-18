@@ -6,10 +6,21 @@ namespace ElevationMapCreator
     class ElevationService_OpenElevation : IElevationServiceProvider
 	{
 		#region interface implementation
-		
-		string IElevationServiceProvider.address => @"https://api.open-elevation.com/api/v1/lookup";
 
-		bool IElevationServiceProvider.ParseApiResponse ( string apiResponse , List<float> elevations )
+		
+		System.Net.Http.HttpMethod IElevationServiceProvider.httpMethod => System.Net.Http.HttpMethod.Post;
+		
+		string IElevationServiceProvider.RequestUri ( string json , string id )
+		{
+			return "https://api.open-elevation.com/api/v1/lookup";
+		}
+
+		string IElevationServiceProvider.GetRequestContent ( List<Coordinate> coordinates )
+        {
+            return JsonUtility.ToJson( new Locations() { locations = coordinates } );
+        }
+
+		bool IElevationServiceProvider.ParseResponse ( string apiResponse , List<float> elevations )
 		{
 			Results responseDeserialized = null;
 			try { responseDeserialized = JsonUtility.FromJson<Results>( apiResponse ); }
@@ -32,13 +43,15 @@ namespace ElevationMapCreator
 			}
 			else
 			{
-				Debug.LogError( "{ nameof(responseDeserialized) } is null" );
+				Debug.LogError( "Response deserialized is null" );
 				return false;
 			}
 		}
 
+
 		#endregion
 		#region nested types
+
 		
 		[System.Serializable]
 		class Results
@@ -59,10 +72,8 @@ namespace ElevationMapCreator
 		}
 
 		[System.Serializable]
-		public class Locations
-		{
-			public Coordinate[] locations;
-		}
+		public class Locations { public List<Coordinate> locations; }
+
 		
 		#endregion
 	}

@@ -5,7 +5,9 @@ namespace ElevationMapCreator
 {
     public interface IElevationServiceProvider
     {
-        bool ParseApiResponse ( string apiResponse , List<float> elevations );
-        string address { get; }
+        System.Net.Http.HttpMethod httpMethod { get; }
+        string RequestUri ( string json , string id );
+        string GetRequestContent ( List<Coordinate> coordinates );
+        bool ParseResponse ( string apiResponse , List<float> elevations );
     }
 }

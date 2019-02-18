@@ -14,15 +14,19 @@ namespace ElevationMapCreator
     {
         #region FIELDS
 
+        
         HttpClient _client = new HttpClient();
 
+        
         #endregion
         #region PUBLIC METHODS
-        
+
+
         public async Task<string> HTTP_POST
         (
-            string address ,
+            IElevationServiceProvider serviceProvider ,
             Stack<Coordinate> coordinates ,
+            string apikey ,
             int maxCoordinatesPerRequest ,
             Ticket ticket ,
             bool logTraffic
@@ -45,19 +49,17 @@ namespace ElevationMapCreator
             }
             
             //create the HttpContent for the form to be posted:
-            System.Net.Http.ByteArrayContent requestContent;
+            System.Net.Http.ByteArrayContent requestContent = null;
+            if( serviceProvider.httpMethod==HttpMethod.Post )
             {
-                var requestArray = requestList.ToArray();
-                string json = JsonUtility.ToJson(
-                    new ElevationService_OpenElevation.Locations() { locations = requestArray }
-                );
+                string json = serviceProvider.GetRequestContent( requestList );
                 byte[] buffer = System.Text.Encoding.ASCII.GetBytes( json );
                 requestContent = new ByteArrayContent( buffer );
                 requestContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue( "application/json" );
                 //Debug.Log( "requestContent.Headers.ContentLength.Value: " + requestContent.Headers.ContentLength.Value );
 
                 //log request:
-                if( logTraffic ) { Debug.Log( $"requesting { requestArray.Length } values:\n{ json }" ); }
+                if( logTraffic ) { Debug.Log( $"requesting { requestList.Count } values:\n{ json }" ); }
             }
 
             //get the stream of the content.
@@ -66,8 +68,28 @@ namespace ElevationMapCreator
             {
                 try
                 {
-                    HttpResponseMessage response = await _client.PostAsync( address , requestContent );
+                    HttpResponseMessage response;
+
+                    if( serviceProvider.httpMethod==HttpMethod.Post )
+                    {
+                        response = await _client.PostAsync(
+                            serviceProvider.RequestUri( null , apikey ) ,
+                            requestContent
+                        );
+                    }
+                    else if( serviceProvider.httpMethod==HttpMethod.Get )
+                    {
+                        response = await _client.GetAsync(
+                            serviceProvider.RequestUri( serviceProvider.GetRequestContent( requestList ) , apikey )
+                        );
+                    }
+                    else
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                    
                     result = await response.Content.ReadAsStringAsync();
+
                     if( result.StartsWith( "<html>" ) )
                     {
                         const string ERROR_504 = "504 Gateway Time-out";
@@ -82,11 +104,15 @@ namespace ElevationMapCreator
 
                         //invalidate:
                         result = null;
+
+                        await Task.Delay( 1000 );//try again after delay
                     }
                     else if ( result.StartsWith( "{\"error\": \"Invalid JSON.\"}" ))
                     {
                         //log warning:
                         Debug.LogWarning( $"invalid JSON. Try decreasing { nameof(maxCoordinatesPerRequest) }" );
+
+                        await Task.Delay( 1000 );//try again after delay
                     }
                 }
                 catch ( System.Net.WebException ex )
@@ -111,7 +137,8 @@ namespace ElevationMapCreator
         public async Task GetElevationData
         (
             string filePath ,
-            IElevationServiceProvider serviveProvider ,
+            IElevationServiceProvider serviceProvider ,
+            string apikey ,
             Ticket<float> ticket ,
             Coordinate start ,
             Coordinate end ,
@@ -210,15 +237,16 @@ namespace ElevationMapCreator
                     {
                         //get response:
                         string response = await HTTP_POST(
-                            serviveProvider.address ,
-                            coordinates ,
-                            maxCoordinatesPerRequest ,
-                            ticket ,
-                            logTraffic
+                            serviceProvider:            serviceProvider ,
+                            coordinates:                coordinates ,
+                            apikey:                     apikey ,
+                            maxCoordinatesPerRequest:   maxCoordinatesPerRequest ,
+                            ticket:                     ticket ,
+                            logTraffic:                 logTraffic
                         );
                         
                         //
-                        if( serviveProvider.ParseApiResponse( response , elevations ) )
+                        if( serviceProvider.ParseResponse( response , elevations ) )
                         {
                             //write entries to file:
                             foreach( float elevation in elevations )

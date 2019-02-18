@@ -7,16 +7,34 @@ namespace ElevationMapCreator
     {
         #region interface implementation
 
-        string IElevationServiceProvider.address => @"https://maps.googleapis.com/maps/api/elevation/json";
 
-        bool IElevationServiceProvider.ParseApiResponse ( string apiResponse , List<float> elevations  )
+        System.Net.Http.HttpMethod IElevationServiceProvider.httpMethod => System.Net.Http.HttpMethod.Get;
+
+        string IElevationServiceProvider.RequestUri ( string json , string id )
+        {
+            return $"https://maps.googleapis.com/maps/api/elevation/json?key={ id }&locations={ json }";
+        }
+
+        string IElevationServiceProvider.GetRequestContent ( List<Coordinate> coordinates )
+        {
+            var sb = new System.Text.StringBuilder();
+            for( int i=0 ; i<coordinates.Count ; i++ )
+            {
+                var next = coordinates[ i ];
+                sb.AppendFormat( "{0},{1}|" , next.latitude , next.longitude );
+            }
+            sb.Remove( sb.Length-1 , 1 );
+            return sb.ToString();
+        }
+
+        bool IElevationServiceProvider.ParseResponse ( string apiResponse , List<float> elevations  )
         {
             Results responseDeserialized = null;
             try { responseDeserialized = JsonUtility.FromJson<Results>( apiResponse ); }
             catch( System.Exception ex ) { Debug.LogException(ex); }
             if( responseDeserialized!=null )
             {
-                if( responseDeserialized.results!=null )
+                if( responseDeserialized.error_message==null )
                 {
                     foreach( var result in responseDeserialized.results )
                     {
@@ -26,7 +44,7 @@ namespace ElevationMapCreator
                 }
                 else
                 {
-                    Debug.LogError( $"Cannot parse: \"{ apiResponse }\"" );
+                    Debug.LogError( $"Error message:{ responseDeserialized.error_message }\nstatus: { responseDeserialized.status }\nraw response:\"{ apiResponse }\"" );
                     return false;
                 }
             }
@@ -37,14 +55,18 @@ namespace ElevationMapCreator
             }
         }
 
+
         #endregion
         #region nested types
+
 
         [System.Serializable]
         class Results
         {
             #pragma warning disable 0649//"field is never assigned to"
             public Result[] results;
+            public string error_message;
+            public string status;
             #pragma warning restore 0649
         }
 
@@ -66,6 +88,8 @@ namespace ElevationMapCreator
             public float lng;
             #pragma warning restore 0649
         }
+
+
 
         #endregion
     }
