@@ -346,7 +346,7 @@ namespace ElevationMapCreator
             public Coordinate start = new Coordinate{ latitude = -90f , longitude = -180f };
             public Coordinate end = new Coordinate{ latitude = 90f , longitude = 180f };
             public CoordinateInt resolution = new CoordinateInt{ latitude = 64 , longitude = 64 };
-            public int maxCoordinatesPerRequest = 2200;
+            public int maxCoordinatesPerRequest = 100;
         }
 
         public enum EOnFinished { doNothing , createImage }
