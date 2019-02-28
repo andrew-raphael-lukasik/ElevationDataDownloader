@@ -8,7 +8,7 @@ namespace Pngcs.Unity
     public static class PNG
     {
 
-        /// <summary> Write PNG to file </summary>
+        /// <summary> Write PNG to file, async </summary>
         public static async Task WriteAsync
         (
             Texture2D texture ,
@@ -17,25 +17,12 @@ namespace Pngcs.Unity
         {
             try
             {
-                if( texture.isReadable==false )
-                {
-                    Debug.LogError( $"'{ texture.name }' is not readable so the texture memory can not be accessed from scripts. You can make the texture readable in the Texture Import Settings." );
-                    return;
-                }
-                var pixels = texture.GetPixels();
-                var format = texture.format;
-                int bitDepth = GetBitDepth( format );
-                bool alpha = GetIsAlpha( format );
-                bool greyscale = GetIsGreyscale( format );
-                await WriteAsync(
-                    pixels:     pixels ,
-                    width:      texture.width ,
-                    height:     texture.height ,
-                    bitDepth:   bitDepth ,
-                    alpha:      alpha ,
-                    greyscale:  greyscale ,
-                    filePath:   filePath
-                );
+                await Task.Run( ()=> {
+                    Write(
+                        texture:    texture ,
+                        filePath:   filePath
+                    );
+                } );
             }
             catch( System.Exception ex ) { Debug.LogException(ex); await Task.CompletedTask; }//kills debugger execution loop on exception
             finally { await Task.CompletedTask; }
@@ -53,84 +40,132 @@ namespace Pngcs.Unity
         {
             try
             {
-                var info = new ImageInfo(
-                    width ,
-                    height ,
-                    bitDepth ,
-                    alpha ,
-                    greyscale ,
-                    false//not implemented here yet//bitDepth==4
+                await Task.Run( ()=>
+                    Write(
+                        pixels:     pixels ,
+                        width:      width ,
+                        height:     height ,
+                        bitDepth:   bitDepth ,
+                        alpha:      alpha ,
+                        greyscale:  greyscale ,
+                        filePath:   filePath
+                    )
                 );
-                await Task.Run( ()=> {
-                    
-                    // open image for writing:
-                    PngWriter writer = FileHelper.CreatePngWriter( filePath , info , true );
-                    
-                    // add some optional metadata (chunks)
-                    var meta = writer.GetMetadata();
-                    meta.SetTimeNow( 0 );// 0 seconds fron now = now
-
-                    int numRows = info.Rows;
-                    int numCols = info.Cols;
-                    for( int row=0 ; row<numRows ; row++ )
-                    {
-                        ImageLine imageline = new ImageLine( info );
-                        int maxSampleVal = imageline.maxSampleVal;
-
-                        //fill line:
-                        if( greyscale==false )
-                        {
-                            if( alpha )
-                            {
-                                for( int col=0 ; col<numCols ; col++ )
-                                {
-                                    RGBA rgba = ToRGBA( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ] , bitDepth );
-                                    ImageLineHelper.SetPixel( imageline , col , rgba.r , rgba.g , rgba.b , rgba.a );
-                                }
-                            }
-                            else
-                            {
-                                for( int col=0 ; col<numCols ; col++ )
-                                {
-                                    RGB rgb = ToRGB( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ] , bitDepth );
-                                    ImageLineHelper.SetPixel( imageline , col , rgb.r , rgb.g , rgb.b );
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if( alpha==false )
-                            {
-                                for( int col=0 ; col<numCols ; col++ )
-                                {
-                                    int r = ToInt( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ].r , bitDepth );
-                                    ImageLineHelper.SetPixel( imageline , col , r );
-                                }
-                            }
-                            else
-                            {
-                                for( int col=0 ; col<numCols ; col++ )
-                                {
-                                    int a = ToInt( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ].a , bitDepth );
-                                    ImageLineHelper.SetPixel( imageline , col , a );
-                                }
-                            }
-                        }
-                        
-                        //write line:
-                        writer.WriteRow( imageline , row );
-                    }
-                    writer.End();
-
-                } );
             }
             catch( System.Exception ex ) { Debug.LogException(ex); await Task.CompletedTask; }//kills debugger execution loop on exception
             finally { await Task.CompletedTask; }
         }
 
+        /// <summary> Write PNG to file </summary>
+        public static void Write
+        (
+            Texture2D texture ,
+            string filePath
+        )
+        {
+            if( texture.isReadable==false )
+            {
+                Debug.LogError( $"'{ texture.name }' is not readable so the texture memory can not be accessed from scripts. You can make the texture readable in the Texture Import Settings." );
+                return;
+            }
+            var pixels = texture.GetPixels();
+            var format = texture.format;
+            int bitDepth = GetBitDepth( format );
+            bool alpha = GetIsAlpha( format );
+            bool greyscale = GetIsGreyscale( format );
+            Write(
+                pixels:     pixels ,
+                width:      texture.width ,
+                height:     texture.height ,
+                bitDepth:   bitDepth ,
+                alpha:      alpha ,
+                greyscale:  greyscale ,
+                filePath:   filePath
+            );
+        }
+        public static void Write
+        (
+            Color[] pixels ,
+            int width ,
+            int height ,
+            int bitDepth ,
+            bool alpha ,
+            bool greyscale ,
+            string filePath
+        )
+        {
+            var info = new ImageInfo(
+                width ,
+                height ,
+                bitDepth ,
+                alpha ,
+                greyscale ,
+                false//not implemented here yet//bitDepth==4
+            );
+                
+            // open image for writing:
+            PngWriter writer = FileHelper.CreatePngWriter( filePath , info , true );
+            
+            // add some optional metadata (chunks)
+            var meta = writer.GetMetadata();
+            meta.SetTimeNow( 0 );// 0 seconds fron now = now
+
+            int numRows = info.Rows;
+            int numCols = info.Cols;
+            for( int row=0 ; row<numRows ; row++ )
+            {
+                ImageLine imageline = new ImageLine( info );
+                int maxSampleVal = imageline.maxSampleVal;
+
+                //fill line:
+                if( greyscale==false )
+                {
+                    if( alpha )
+                    {
+                        for( int col=0 ; col<numCols ; col++ )
+                        {
+                            RGBA rgba = ToRGBA( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ] , bitDepth );
+                            ImageLineHelper.SetPixel( imageline , col , rgba.r , rgba.g , rgba.b , rgba.a );
+                        }
+                    }
+                    else
+                    {
+                        for( int col=0 ; col<numCols ; col++ )
+                        {
+                            RGB rgb = ToRGB( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ] , bitDepth );
+                            ImageLineHelper.SetPixel( imageline , col , rgb.r , rgb.g , rgb.b );
+                        }
+                    }
+                }
+                else
+                {
+                    if( alpha==false )
+                    {
+                        for( int col=0 ; col<numCols ; col++ )
+                        {
+                            int r = ToInt( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ].r , bitDepth );
+                            ImageLineHelper.SetPixel( imageline , col , r );
+                        }
+                    }
+                    else
+                    {
+                        for( int col=0 ; col<numCols ; col++ )
+                        {
+                            int a = ToInt( pixels[ IndexPngToTexture( row , col , numRows , numCols ) ].a , bitDepth );
+                            ImageLineHelper.SetPixel( imageline , col , a );
+                        }
+                    }
+                }
+                
+                //write line:
+                writer.WriteRow( imageline , row );
+            }
+            writer.End();
+        }
+
         public static async Task WriteGrayscaleAsync
         (
-            int[] pixels ,
+            ushort[] pixels ,
             int width ,
             int height ,
             int bitDepth ,
@@ -168,7 +203,7 @@ namespace Pngcs.Unity
                         {
                             for( int col=0 ; col<numCols ; col++ )
                             {
-                                int r = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
+                                ushort r = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
                                 ImageLineHelper.SetPixel( imageline , col , r );
                             }
                         }
@@ -176,7 +211,7 @@ namespace Pngcs.Unity
                         {
                             for( int col=0 ; col<numCols ; col++ )
                             {
-                                int a = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
+                                ushort a = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
                                 ImageLineHelper.SetPixel( imageline , col , a );
                             }
                         }
@@ -192,7 +227,7 @@ namespace Pngcs.Unity
             finally { await Task.CompletedTask; }
         }
 
-        /// <summary> Create Texture2D from PNG file </summary>
+        /// <summary> Create Texture2D from PNG file, async </summary>
         public static async Task<Texture2D> ReadAsync
         (
             string filePath
@@ -209,8 +244,26 @@ namespace Pngcs.Unity
             catch( System.Exception ex ) { Debug.LogException(ex); await Task.CompletedTask; }//kills debugger execution loop on exception
             return result;
         }
+
+        /// <summary> Create Texture2D from PNG file </summary>
+        public static Texture2D Read
+        (
+            string filePath
+        )
+        {
+            Texture2D result = null;
+            try
+            {
+                var readout = ReadColors( filePath );
+                result = new Texture2D( readout.width , readout.height , readout.textureFormatInfered , false , true );
+                result.SetPixels( readout.pixels );
+                result.Apply();
+            }
+            catch( System.Exception ex ) { Debug.LogException(ex); }
+            return result;
+        }
         
-        /// <summary> Create Color[] from PNG file </summary>
+        /// <summary> Create Color[] from PNG file, async </summary>
         public static async Task<ReadColorsResult> ReadColorsAsync
         (
             string filePath
@@ -289,6 +342,81 @@ namespace Pngcs.Unity
             return results;
         }
 
+        /// <summary> Create Color[] from PNG file </summary>
+        public static ReadColorsResult ReadColors
+        (
+            string filePath
+        )
+        {
+            ReadColorsResult results = new ReadColorsResult{
+                pixels = null ,
+                width = -1 ,
+                height = -1 ,
+                textureFormatInfered = 0
+            };
+            PngReader reader = null;
+            try
+            {
+                reader = FileHelper.CreatePngReader( filePath );
+                var info = reader.ImgInfo;
+                results.height = info.Rows;
+                results.width = info.Cols;
+                results.pixels = new Color[ results.width * results.height ];
+            
+                int channels = info.Channels;
+                int bitDepth = info.BitDepth;
+                if( info.Indexed ) { throw new System.NotImplementedException( "indexed png not implemented" ); }
+
+                //select appropriate texture format:
+                results.textureFormatInfered = GetTextureFormat( bitDepth , channels );
+                
+                //create pixel array:
+                for( int row=0 ; row<results.height ; row++ )
+                {
+                    ImageLine imageLine = reader.ReadRowInt( row );
+                    var scanline = imageLine.Scanline;
+                    if( imageLine.SampleType==ImageLine.ESampleType.INT )
+                    {
+                        for( int col=0 ; col<results.width ; col++ )
+                        {
+                            var color = new Color();
+                            for( int ch=0 ; ch<channels ; ch++ )
+                            {
+                                int raw = scanline[ col * channels + ch ];
+                                float rawMax = GetBitDepthMaxValue( bitDepth );
+                                float value = (float)raw / rawMax;
+
+                                //
+                                if( ch==0 ) { color.r = value; }
+                                else if( ch==1 ) { color.g = value; }
+                                else if( ch==2 ) { color.b = value; }
+                                else if( ch==3 ) { color.a = value; }
+                                else { throw new System.Exception( $"channel { ch } not implemented" ); }
+                            }
+                            results.pixels[ IndexPngToTexture( row , col , results.height , results.width ) ] = color;
+                        }
+                    }
+                    else { throw new System.Exception( $"imageLine.SampleType { imageLine.SampleType } not implemented" ); }
+                }
+            }
+            catch ( System.Exception ex )
+            {
+                Debug.LogException( ex );
+                if( results.pixels==null )
+                {
+                    results.width = 2;
+                    results.height = 2;
+                    results.pixels = new Color[ results.width * results.height ];
+                }
+                if( results.textureFormatInfered==0 ) { results.textureFormatInfered = TextureFormat.RGBA32; }
+            }
+            finally
+            {
+                if( reader!=null ) reader.End();
+            }
+            return results;
+        }
+
         /// <summary> Texture2D's rows start from the bottom while PNG from the top. Hence inverted y/row. </summary>
         public static int IndexPngToTexture ( int row , int col , int numRows , int numCols ) => numCols * ( numRows - 1 - row ) + col;
 
@@ -319,7 +447,7 @@ namespace Pngcs.Unity
             {
                 case TextureFormat.DXT1: return false;
                 case TextureFormat.DXT5: return true;
-                case TextureFormat.Alpha8: return true;//? im not 100% sure is it alpha or, for example, red channel
+                case TextureFormat.Alpha8: return false;
                 case TextureFormat.R8: return false;
                 case TextureFormat.R16: return false;
                 case TextureFormat.RHalf: return false;
@@ -355,8 +483,8 @@ namespace Pngcs.Unity
                 //case 84: return TextureFormat.DXT5;//no way to infer between DXT5 and RGBA32, prefer one for runtime use
                 case 84: return TextureFormat.RGBA32;
                 case 83: return TextureFormat.RGB24;
-                case 81: return TextureFormat.Alpha8;
-                //case 81: return TextureFormat.R8;//no way to infer between Alpha8 and R8
+                //case 81: return TextureFormat.Alpha8;//no way to infer between Alpha8 and R8, BUT Alpha8 was causing a problem, because grayscale 8bit channel seems to be saved as R in png (ie: reported as non-alpha image on read)
+                case 81: return TextureFormat.R8;
                 case 161: return TextureFormat.R16;
                 //case 161: return TextureFormat.RHalf;//no way to infer between R16 and RHalf
                 case 163: return TextureFormat.RGB565;

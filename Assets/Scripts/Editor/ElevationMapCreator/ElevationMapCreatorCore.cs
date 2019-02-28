@@ -379,9 +379,9 @@ namespace ElevationMapCreator
 
             //prepare samples:
             Debug.Log( $"Creating image...\nsource: { filePath }" );
-            int[] pixels;
+            ushort[] pixels;
             {
-                pixels = new int[ height * width ];
+                pixels = new ushort[ height * width ];
                 IO.FileStream stream = null;
                 IO.StreamReader reader = null;
 
@@ -409,7 +409,7 @@ namespace ElevationMapCreator
                                 float elevation = float.Parse( line );
                                 float clamped = Mathf.Clamp( elevation , clampElevation.x , clampElevation.y );
                                 float inverselerped = Mathf.InverseLerp( lerpElevation.x , lerpElevation.y , clamped );
-                                int color = (int)( inverselerped * ushort.MaxValue );
+                                ushort color = (ushort)( inverselerped * ushort.MaxValue );
                                 
                                 // find pixel position
                                 int X = (width-1) - index%width;
