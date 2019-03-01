@@ -358,7 +358,7 @@ namespace ElevationMapCreator
             string filePath ,
             int width ,
             int height ,
-            Vector2 clampElevation ,
+            float offsetElevation ,
             Vector2 lerpElevation ,
             System.Action onFinish = null
         )
@@ -406,9 +406,12 @@ namespace ElevationMapCreator
                             if( line.Length!=0 )
                             {
                                 //calc color value:
-                                float elevation = float.Parse( line );
-                                float clamped = Mathf.Clamp( elevation , clampElevation.x , clampElevation.y );
-                                float inverselerped = Mathf.InverseLerp( lerpElevation.x , lerpElevation.y , clamped );
+                                float elevation = float.Parse( line ) + offsetElevation;
+                                float inverselerped = Mathf.InverseLerp(
+                                    lerpElevation.x ,
+                                    lerpElevation.y ,
+                                    elevation
+                                );
                                 ushort color = (ushort)( inverselerped * ushort.MaxValue );
                                 
                                 // find pixel position
@@ -435,7 +438,7 @@ namespace ElevationMapCreator
 
             //write bytes to file:
             {
-                string pngFilePath = $"{ filePath.Replace(".csv","") } elevations({ clampElevation.x },{ clampElevation.y }).png";
+                string pngFilePath = $"{ filePath.Replace(".csv","") } offset({ offsetElevation }) invlerp({ lerpElevation.x },{ lerpElevation.y }).png";
                 Debug.Log( $"\twriting to PNG file: { pngFilePath }" );
                 await PNG.WriteGrayscaleAsync(
                     pixels:    pixels ,

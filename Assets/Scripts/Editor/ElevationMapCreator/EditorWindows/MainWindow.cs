@@ -259,7 +259,7 @@ namespace ElevationMapCreator
                                             filePath.Replace( ".csv" , ".png" ) ,
                                             _settings.resolution.longitude ,
                                             _settings.resolution.latitude ,
-                                            _createImageSettings.clamp ,
+                                            _createImageSettings.offset ,
                                             _createImageSettings.lerp
                                         );
                                     }

@@ -85,10 +85,8 @@ namespace ElevationMapCreator
                 EditorGUILayout.BeginHorizontal();
                 {
                     //
-                    GUILayout.Label( "Clamp Elevation:" , GUILayout.Width(100f) );
-                    _owner.createImageSettings.clamp.x = EditorGUILayout.FloatField( _owner.createImageSettings.clamp.x , GUILayout.Width(60f) );
-                    GUILayout.Label( "-" , GUILayout.Width(10f) );
-                    _owner.createImageSettings.clamp.y = EditorGUILayout.FloatField( _owner.createImageSettings.clamp.y , GUILayout.Width(60f) );
+                    GUILayout.Label( "Offset Elevation:" , GUILayout.Width(100f) );
+                    _owner.createImageSettings.offset = EditorGUILayout.FloatField( _owner.createImageSettings.offset , GUILayout.Width(60f) );
 
                     //
                     GUILayout.Label( "Map Elevation:" , GUILayout.Width(100f) );
@@ -132,7 +130,7 @@ namespace ElevationMapCreator
                         _filePath ,
                         _owner.createImageSettings.resolution.longitude ,
                         _owner.createImageSettings.resolution.latitude ,
-                        _owner.createImageSettings.clamp ,
+                        _owner.createImageSettings.offset ,
                         _owner.createImageSettings.lerp ,
                         EditorWindow.GetWindow<CreateImageWindow>().Show
                     );
@@ -146,7 +144,7 @@ namespace ElevationMapCreator
                             csv ,
                             _owner.createImageSettings.resolution.longitude ,
                             _owner.createImageSettings.resolution.latitude ,
-                            _owner.createImageSettings.clamp ,
+                            _owner.createImageSettings.offset ,
                             _owner.createImageSettings.lerp ,
                             EditorWindow.GetWindow<CreateImageWindow>().Show
                         );
@@ -221,7 +219,7 @@ namespace ElevationMapCreator
         public class Settings
         {
             public CoordinateInt resolution = new CoordinateInt{ latitude = 64 , longitude = 64 };
-            public Vector2 clamp = new Vector2{ x = -100f , y = 8848f };
+            public float offset = 0f;
             public Vector2 lerp = new Vector2Int{ x = 0 , y = ushort.MaxValue };
         }
 
