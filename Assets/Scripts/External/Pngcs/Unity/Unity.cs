@@ -17,12 +17,23 @@ namespace Pngcs.Unity
         {
             try
             {
-                await Task.Run( ()=> {
-                    Write(
-                        texture:    texture ,
-                        filePath:   filePath
-                    );
-                } );
+                Color[] pixels = texture.GetPixels();
+                int width = texture.width;
+                int height = texture.height;
+                var format = texture.format;
+                int bitDepth = GetBitDepth( format );
+                bool alpha = GetIsAlpha( format );
+                bool greyscale = GetIsGreyscale( format );
+                
+                await WriteAsync(
+                    pixels:     pixels ,
+                    width:      width ,
+                    height:     height ,
+                    bitDepth:   bitDepth ,
+                    alpha:      alpha ,
+                    greyscale:  greyscale ,
+                    filePath:   filePath
+                );
             }
             catch( System.Exception ex ) { Debug.LogException(ex); await Task.CompletedTask; }//kills debugger execution loop on exception
             finally { await Task.CompletedTask; }
