@@ -444,7 +444,6 @@ namespace ElevationMapCreator
                     pixels:    pixels ,
                     width:      width ,
                     height:     height ,
-                    bitDepth:   16 ,
                     alpha:      false ,
                     filePath:   pngFilePath
                 );

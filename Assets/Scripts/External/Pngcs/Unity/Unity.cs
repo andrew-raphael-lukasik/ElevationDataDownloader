@@ -174,12 +174,12 @@ namespace Pngcs.Unity
             writer.End();
         }
 
+        /// <summary> Writes 16-bit grayscale image </summary>
         public static async Task WriteGrayscaleAsync
         (
             ushort[] pixels ,
             int width ,
             int height ,
-            int bitDepth ,
             bool alpha ,
             string filePath
         )
@@ -188,7 +188,7 @@ namespace Pngcs.Unity
                 var info = new ImageInfo(
                     width ,
                     height ,
-                    bitDepth ,
+                    16 ,
                     alpha ,
                     true ,
                     false//not implemented here yet
@@ -223,6 +223,70 @@ namespace Pngcs.Unity
                             for( int col=0 ; col<numCols ; col++ )
                             {
                                 ushort a = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
+                                ImageLineHelper.SetPixel( imageline , col , a );
+                            }
+                        }
+                        
+                        //write line:
+                        writer.WriteRow( imageline , row );
+                    }
+                    writer.End();
+
+                } );
+            }
+            catch( System.Exception ex ) { Debug.LogException(ex); await Task.CompletedTask; }//kills debugger execution loop on exception
+            finally { await Task.CompletedTask; }
+        }
+
+        /// <summary> Writes 8-bit grayscale image </summary>
+        public static async Task WriteGrayscaleAsync
+        (
+            byte[] pixels ,
+            int width ,
+            int height ,
+            bool alpha ,
+            string filePath
+        )
+        {
+            try {
+                var info = new ImageInfo(
+                    width ,
+                    height ,
+                    8 ,
+                    alpha ,
+                    true ,
+                    false//not implemented here yet
+                );
+                await Task.Run( ()=> {
+                    
+                    // open image for writing:
+                    PngWriter writer = FileHelper.CreatePngWriter( filePath , info , true );
+                    
+                    // add some optional metadata (chunks)
+                    var meta = writer.GetMetadata();
+                    meta.SetTimeNow( 0 );// 0 seconds fron now = now
+
+                    int numRows = info.Rows;
+                    int numCols = info.Cols;
+                    for( int row=0 ; row<numRows ; row++ )
+                    {
+                        ImageLine imageline = new ImageLine( info );
+                        int maxSampleVal = imageline.maxSampleVal;
+
+                        //fill line:
+                        if( alpha==false )
+                        {
+                            for( int col=0 ; col<numCols ; col++ )
+                            {
+                                byte r = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
+                                ImageLineHelper.SetPixel( imageline , col , r );
+                            }
+                        }
+                        else
+                        {
+                            for( int col=0 ; col<numCols ; col++ )
+                            {
+                                byte a = pixels[ IndexPngToTexture( row , col , numRows , numCols ) ];
                                 ImageLineHelper.SetPixel( imageline , col , a );
                             }
                         }
