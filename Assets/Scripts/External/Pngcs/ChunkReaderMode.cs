@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Pngcs
+﻿namespace Pngcs
 {
-    enum EChunkReaderMode
-    {
-        BUFFER , PROCESS , SKIP
-    }
+	enum EChunkReaderMode
+	{
+		BUFFER , PROCESS , SKIP
+	}
 }

@@ -1,154 +1,108 @@
-﻿using System.IO;
+﻿using IO = System.IO;
 
 namespace Pngcs
 {
-    class BufferedStreamFeeder
-    {
-        Stream _stream;
-        byte[] buf;
-        int pendinglen; // bytes read and stored in buf that have not yet still been fed to IBytesConsumer
-        int offset;
-        bool eof = false;
-        bool closeStream = true;
-        bool failIfNoFeed = false;
-        const int DEFAULTSIZE = 8192;
+	class BufferedStreamFeeder
+	{
+		
+		/// <summary> Stream from which bytes are read </summary>
+		public IO.Stream Stream => _stream;
+		IO.Stream _stream;
 
-       	public BufferedStreamFeeder ( Stream ist )
-           : this( ist , DEFAULTSIZE )
-        {
+		byte[] buf;
+		int pendinglen; // bytes read and stored in buf that have not yet still been fed to IBytesConsumer
+		int offset;
+		bool eof = false;
+		bool closeStream = true;
+		bool failIfNoFeed = false;
+		const int DEFAULTSIZE = 8192;
 
-	    }
+	   	public BufferedStreamFeeder ( IO.Stream ist )
+		   : this( ist , DEFAULTSIZE )
+		{
 
-    	public BufferedStreamFeeder ( Stream ist , int bufsize )
-        {
-	    	this._stream = ist;
-	    	buf = new byte[ bufsize ];
-	    }
+		}
 
+		public BufferedStreamFeeder ( IO.Stream ist , int bufsize )
+		{
+			this._stream = ist;
+			buf = new byte[ bufsize ];
+		}
+		
+		/// <summary> Feeds bytes to the consumer </summary>
+		/// <returns> Bytes actually consumed. Should return 0 only if the stream is EOF or the consumer is done </returns>
+		public int Feed ( IBytesConsumer consumer ) => Feed( consumer , -1 );
 
-        /// <summary>
-        /// Stream from which bytes are read
-        /// </summary>
-        public Stream getStream ()
-        {
-            return _stream;
-        }
-        
-        /// <summary>
-        /// Feeds bytes to the consumer 
-        ///  Returns bytes actually consumed
-        ///  This should return 0 only if the stream is EOF or the consumer is done
-        /// </summary>
-        /// <param name="consumer"></param>
-        /// <returns></returns>
-        public int feed ( IBytesConsumer consumer )
-        {
-            return feed( consumer , -1 );
-        }
+		public int Feed ( IBytesConsumer consumer , int maxbytes )
+		{
+			int n = 0;
+			if( pendinglen==0 ) RefillBuffer();
+			int tofeed = maxbytes>0 && maxbytes<pendinglen ? maxbytes : pendinglen;
+			if( tofeed>0 )
+			{
+				n = consumer.consume( buf , offset , tofeed );
+				if( n>0 )
+				{
+					offset += n;
+					pendinglen -= n;
+				}
+			}
+			if( n<1 && failIfNoFeed ) { throw new IO.IOException("failed feed bytes"); }
+			return n;
+		}
 
-        public int feed ( IBytesConsumer consumer , int maxbytes )
-        {
-            int n = 0;
-            if( pendinglen==0 )
-            {
-                refillBuffer();
-            }
-            int tofeed = maxbytes>0 && maxbytes<pendinglen ? maxbytes : pendinglen;
-            if( tofeed>0 )
-            {
-                n = consumer.consume( buf , offset , tofeed );
-                if( n>0 )
-                {
-                    offset += n;
-                    pendinglen -= n;
-                }
-            }
-            if( n<1 && failIfNoFeed ) { throw new PngjInputException( "failed feed bytes" ); }
-            return n;
-        }
+		public bool FeedFixed ( IBytesConsumer consumer , int nbytes )
+		{
+			int remain = nbytes;
+			while( remain>0 )
+			{
+				int n = Feed( consumer , remain );
+				if( n<1 ) return false;
+				remain -= n;
+			}
+			return true;
+		}
 
-        public bool feedFixed(IBytesConsumer consumer, int nbytes)
-        {
-            int remain = nbytes;
-            while (remain > 0)
-            {
-                int n = feed(consumer, remain);
-                if (n < 1)
-                    return false;
-                remain -= n;
-            }
-            return true;
-        }
+		protected void RefillBuffer ()
+		{
+			if( pendinglen>0 || eof ) return; // only if not pending data
+			// try to read
+			offset = 0;
+			pendinglen = _stream.Read( buf , 0 , buf.Length );
+			if( pendinglen<0 )
+			{
+				Close();
+			}
+		}
 
-        protected void refillBuffer ()
-        {
-            if( pendinglen>0 || eof )
-                return; // only if not pending data
-            try
-            {
-                // try to read
-                offset = 0;
-                pendinglen = _stream.Read( buf , 0 , buf.Length );
-                if( pendinglen<0 )
-                {
-                    close();
-                }
-            }
-            catch( IOException e )
-            {
-                throw new PngjInputException( e );
-            }
-        }
+		public bool HasMoreToFeed ()
+		{
+			if( eof ) return pendinglen>0;
+			else RefillBuffer();
+			return pendinglen>0;
+		}
 
-        public bool hasMoreToFeed ()
-        {
-            if( eof )
-                return pendinglen>0;
-            else
-                refillBuffer();
-            return pendinglen > 0;
-        }
+		public void SetCloseStream ( bool closeStream ) => this.closeStream = closeStream;
 
-        public void setCloseStream ( bool closeStream )
-        {
-            this.closeStream = closeStream;
-        }
+		public void Close ()
+		{
+			eof = true;
+			buf = null;
+			pendinglen = 0;
+			offset = 0;
+			if( _stream!=null && closeStream ) _stream.Close();
+			_stream = null;
+		}
 
-        public void close ()
-        {
-            eof = true;
-            buf = null;
-            pendinglen = 0;
-            offset = 0;
-            try
-            {
-                if( _stream!=null && closeStream )
-                {
-                    _stream.Close();
-                }
-            }
-            catch( System.Exception e )
-            {
-                PngHelperInternal.Log( "Exception closing stream" , e );
-            }
-            _stream = null;
-        }
+	   	public void SetInputStream ( IO.Stream stream )// to reuse this object
+		{
+			this._stream = stream;
+			eof = false;
+		}
 
-       	public void setInputStream ( Stream ist )// to reuse this object
-        {
-		    this._stream = ist;
-		    eof = false;
-	    }
+		public bool IsEof () => eof;
 
-        public bool isEof ()
-        {
-            return eof;
-        }
+		public void SetFailIfNoFeed ( bool failIfNoFeed ) => this.failIfNoFeed = failIfNoFeed;
 
-        public void setFailIfNoFeed ( bool failIfNoFeed )
-        {
-            this.failIfNoFeed = failIfNoFeed;
-        }
-
-    }
+	}
 }
