@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.unity.package-manager-ui": "2.0.3",
-    "com.unity.modules.jsonserialize": "1.0.0"
+    "com.unity.ide.vscode": "1.1.4",
+    "com.unity.modules.unitywebrequest": "1.0.0"
   }
 }
